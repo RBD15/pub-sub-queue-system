@@ -5,33 +5,10 @@ class AgentService{
 
   #agent
   constructor(){
-    this.#agent = [
-        {
-            "_id": "642ce03160c06a843dfce0f2",
-            "name": "Rober",
-            "email": "r@correo.com",
-            "idQueue": [
-                {"_id": "68960b4f74b0b2262e7bdd52"},
-                {"_id": "689ca3b7da3b9bfe5aa782f9"}
-            ],
-            "idOperation": "1234",
-            "online": true
-        },
-        {
-            "_id": "600ce03161c06a843dfce0f2",
-            "name": "Prueba",
-            "email": "test@correo.com",
-            "idQueue": [
-                {"_id": "68960b4f74b0b2262e7bdd52"},
-                {"_id": "689ca3b7da3b9bfe5aa782f9"}
-            ],
-            "idOperation": "1234",
-            "online": false
-        }
-    ];
+    this.#agent = []
   }
 
-  get(idOperation,availableOnly = false){
+  async get(idOperation,availableOnly = false){
     let findParams = {idOperation: idOperation}
     if(availableOnly){
       findParams.online = true
@@ -99,7 +76,7 @@ class AgentService{
 
   async create(agent){
     this.#agent.push(agent)
-    return newAgent
+    return agent
   }
 
 

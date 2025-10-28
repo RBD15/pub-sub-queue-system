@@ -1,4 +1,4 @@
-const { MultiQueue, eventManager } = require('./queue-system'); // Adjust path as needed
+const { MultiQueue, eventManager } = require('./queue-system');
 const Queue = require('./Queue/application/Queue');
 const DequeueListener = require('./Shared/Listener/DequeueListener');
 const EnqueueListener = require('./Shared/Listener/EnqueueListener');
@@ -24,8 +24,8 @@ queueSystem.createQueue(queue);
 console.log("\n📦 Enqueuing items...");
 
 queueSystem.enqueue("1000", "Create user John");
-queueSystem.enqueue("1000", "Update user profile");
-queueSystem.enqueue("2000", "Send welcome email");
+queueSystem.enqueue("1000", "Create user Paul");
+queueSystem.enqueue("2000", "Create user Marie");
 queueSystem.enqueue("3000", "Process payment $50");
 queueSystem.enqueue("3000", "Refund transaction");
 
@@ -75,3 +75,20 @@ if (item5) {
 }
 
 console.log("\n🏁 Demo completed!");
+
+
+// Crear agentes y asociarlos a colas
+agentManager.addAgent('agent_001', ['1000', '2000']);
+agentManager.addAgent('agent_002', ['3000']);
+agentManager.addAgent('agent_003', ['1000', '3000']);
+
+    const agentId = agentManager.assignAgentToQueue(queueId);
+    if (!agentId) {
+      console.log(`🚫 No hay agentes disponibles para la cola ${queueId}`);
+      return null;
+    }
+
+    eventManager.emit(new AgentEvent('TASK_ASSIGNED', {
+      data: { agentId, queueId, item }
+    }));
+
