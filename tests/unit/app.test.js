@@ -1,5 +1,8 @@
-const { MultiQueue } = require('../../src/queue-system');
+const { MultiQueue, eventManager } = require('../../src/queue-system');
 const Queue = require('../../src/Queue/application/Queue');
+const AgentStatus = require('../../src/Shared/Event/AgentStatus');
+const AgentUpdateStatusEvent = require('../../src/Shared/Event/AgentUpdateStatusEvent');
+const AgentUpdateStatusListener = require('../../src/Shared/Listener/AgentUpdateStatusListener');
 const { randomTimeStampDate } = require('../../src/Shared/Utils/date');
 
 describe('Queue System Tests',()=>{
@@ -140,6 +143,43 @@ describe('Queue System Tests',()=>{
         item = multiQueue.dequeueFromSelectedQueues([ids[0],ids[1],ids[2]]);
         expect(item.value).toBe(values[3])
     })
+
+    test('MultiQueue agentLogged', async () => {
+
+        multiQueue.cleanQueues()
+        let ids=[],agent,values=[],queue,timestamp,currentAgents
+        //Creating Queue
+        ids.push('1000')
+        queue = new Queue(ids[0])
+        multiQueue.createQueue(queue)
+        
+        //Enqueue Interactions
+        values.push("Interaction 1")
+        timestamp = randomTimeStampDate()
+        multiQueue.enqueue(ids[0], values[0], timestamp)
+
+        //Record Agent
+        const firstAgent = {
+            "_id": "642ce03160c06a843dfce0f2",
+            "name": "FirstAgent",
+            "email": "f@correo.com",
+            "idQueue": [
+                {"_id": "68960b4f74b0b2262e7bdd52"},
+                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+            ],
+            "idOperation": "1234",
+            "online": true
+        }
+        
+        currentAgents = multiQueue.getAgentByQueue('1000')
+        expect(currentAgents.length).toBe(0)
+        
+        await multiQueue.agentLogged(queue.getId(),firstAgent)
+        currentAgents = multiQueue.getAgentByQueue('1000')
+        
+        expect(currentAgents.length).toBe(1)
+        expect(currentAgents[0].name).toBe(firstAgent.name)
+    });
     
     test('MultiQueue handleNextPendingInteraction only one queue', async () => {
         multiQueue.cleanQueues()
@@ -149,8 +189,6 @@ describe('Queue System Tests',()=>{
         queue = new Queue(ids[0])
         multiQueue.createQueue(queue)
         
-        console.log({interactions1000:multiQueue.getAgentByQueue('1000')});
-
         //Enqueue Interactions
         values.push("Interaction 1")
         timestamp = randomTimeStampDate()
@@ -186,7 +224,6 @@ describe('Queue System Tests',()=>{
         }
         
         await multiQueue.agentLogged(queue.getId(),firstAgent)
-        console.log({interactions1000:multiQueue.getAgentByQueue('1000')});
         
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(firstAgent.name)
@@ -292,9 +329,6 @@ describe('Queue System Tests',()=>{
         expect(agent.name).toBe(firstAgent.name)
         expect(agent.interactions).toBe(3)
 
-        console.log({interactions1000:multiQueue.getAgentByQueue('1000')});
-        console.log({interactions2000:multiQueue.getAgentByQueue('2000')});
-            
         //Second part
         values.push("Interaction 4")
         timestamp = randomTimeStampDate()
@@ -634,6 +668,119 @@ describe('Queue System Tests',()=>{
       await expect(multiQueue.agentLogged('',secondAgent))
       .rejects
       .toThrow("Queue id didnt find");
+
+    });
+
+    // test('MultiQueue Fail handleNextPendingInteraction', async () => {
+        
+    //     multiQueue.cleanQueues()
+    //     let ids=[],agent,values=[],queue,timestamp,item
+    //     //Creating Queue
+    //     ids.push('1000')
+    //     queue = new Queue(ids[0])
+    //     multiQueue.createQueue(queue)
+
+    //     //Enqueue Interactions
+    //     values.push("Interaction 1")
+    //     timestamp = randomTimeStampDate()
+    //     multiQueue.enqueue(ids[0], values[0], timestamp)
+
+    //     values.push("Interaction 2")
+    //     timestamp = randomTimeStampDate()
+    //     multiQueue.enqueue(ids[0], values[1], timestamp)
+
+    //     values.push("Interaction 3")
+    //     timestamp = randomTimeStampDate()
+    //     multiQueue.enqueue(ids[0], values[2], timestamp)
+
+    //     //Record Agent
+    //     const firstAgent = {
+    //         "_id": "642ce03160c06a843dfce0f2",
+    //         "name": "FirstAgent",
+    //         "email": "f@correo.com",
+    //         "idQueue": [
+    //             {"_id": "68960b4f74b0b2262e7bdd52"},
+    //             {"_id": "689ca3b7da3b9bfe5aa782f9"}
+    //         ],
+    //         "idOperation": "1234",
+    //         "online": true
+    //     }
+
+    //     agent = await multiQueue.handleNextPendingInteraction()
+    //     expect(agent.name).toBe(firstAgent.name)
+    //     expect(agent.interactions).toBe(1)
+
+    // });
+
+    test('MultiQueue testing dispatching AgentStatusEvent', async () => {
+        
+       multiQueue.cleanQueues()
+       let ids=[],agent,values=[],queue1,queue2,timestamp,event,currentAgents
+       eventManager.subscribe('agent-change-status',new AgentUpdateStatusListener(multiQueue))
+                
+       //Creating Queue
+       ids.push('1000')
+       queue1 = new Queue(ids[0])
+       multiQueue.createQueue(queue1)
+                
+       //Enqueue Interactions
+       values.push("Interaction 1")
+       timestamp = randomTimeStampDate()
+       multiQueue.enqueue(ids[0], values[0], timestamp)
+
+       
+       values.push("Interaction 2")
+       timestamp = randomTimeStampDate()
+       multiQueue.enqueue(ids[0], values[1], timestamp)
+
+       //Record Agent
+       const firstAgent = {
+           "_id": "642ce03160c06a843dfce0f2",
+           "name": "FirstAgent",
+           "email": "f@correo.com",
+           "idQueue": [
+               {"_id": "68960b4f74b0b2262e7bdd52"},
+               {"_id": "689ca3b7da3b9bfe5aa782f9"}
+           ],
+           "idOperation": "1234",
+           "online": true
+       }
+
+       currentAgents = multiQueue.getAgentByQueue(ids[0])
+       expect(currentAgents.length).toBe(0)
+
+       agent = await multiQueue.handleNextPendingInteraction()
+       expect(agent).toBe(undefined)
+
+       event = new AgentUpdateStatusEvent(
+           ids[0],
+           firstAgent,
+           AgentStatus.LOGIN,
+           'agent-change-status'
+       )
+       eventManager.emit(event)
+
+       currentAgents = multiQueue.getAgentByQueue(ids[0])
+       expect(currentAgents.length).toBe(1)
+
+       agent = await multiQueue.handleNextPendingInteraction()
+       expect(agent.name).toBe(firstAgent.name)
+       expect(agent.interactions).toBe(1)
+
+       agent = await multiQueue.handleNextPendingInteraction()
+       expect(agent.name).toBe(firstAgent.name)
+       expect(agent.interactions).toBe(2)
+
+       event = new AgentUpdateStatusEvent(
+           ids[0],
+           firstAgent,
+           AgentStatus.LOGOUT,
+           'agent-change-status'
+       )
+       eventManager.emit(event)
+
+       currentAgents = multiQueue.getAgentByQueue(ids[0])
+       expect(currentAgents.length).toBe(0)
 
     });
 })

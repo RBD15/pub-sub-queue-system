@@ -64,7 +64,7 @@ class Queue {
   }
 
   getAgents(){
-    return [...this.#agents.values()]
+    return [...this.#agents.values()].filter(a => a.online)
   }
 
   setAgent(newAgent){
