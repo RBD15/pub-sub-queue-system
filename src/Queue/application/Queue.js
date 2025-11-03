@@ -39,9 +39,10 @@ class Queue {
     this.#agents = new Map()
   }
 
-  cleanAgentInteractions(agentId) {
-    if (this.#agents.has(agentId) && this.#agents.get(agentId).interactions > 0) {
-      this.#agents.get(agentId).interactions = 0;
+  cleanAgentInteractions() {
+    for (const [key, value] of this.#agents.entries()) {
+      if (value.interactions > 0)
+        value.interactions = 0;
     }
   }
 
