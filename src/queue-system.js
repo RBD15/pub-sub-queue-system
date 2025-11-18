@@ -1,18 +1,20 @@
-const EventManager = require("./Shared/Domain/EventManager");
 const EnqueueEvent = require("./shared/Event/EnqueueEvent");
 const DequeueEvent = require("./shared/Event/DequeueEvent");
-const queueService = require("./Service/queue.service");
 const Queue = require("./Queue/application/Queue");
 
 class MultiQueue {
   #queues;
   #operation;
   #enqueueHistory;
+  #eventManager
+  #queueService
 
-  constructor() {
+  constructor(eventManager,queueService) {
     this.#queues = new Map();
     this.#operation = "1234"
     this.#enqueueHistory = [];
+    this.#eventManager = eventManager
+    this.#queueService = queueService
   }
 
   async createQueue(queue) { 
@@ -80,7 +82,7 @@ class MultiQueue {
     });
 
     // Publish event on enqueue
-    eventManager.emit(
+    this.#eventManager.emit(
       new EnqueueEvent('QUEUE_ENQUEUED',{data: { queueId, item }})
     );
   }
@@ -124,7 +126,7 @@ class MultiQueue {
     );
 
     // Publish event on dequeue
-    eventManager.emit(
+    this.#eventManager.emit(
       new DequeueEvent('QUEUE_DEQUEUED',{data: { queueId, item }})
     );
 
@@ -146,7 +148,7 @@ class MultiQueue {
     if(this.#queues.has(queueID)){
       queueInstance = this.#queues.get(queueID)
     }else{
-      const queue = await queueService.getQueueById(queueID)
+      const queue = await this.#queueService.getQueueById(queueID)
       if(!queue)
         throw new Error("Agent Logged, Queue wasnt founded")
       queueInstance = new Queue(queue._id,queue.name)
@@ -160,7 +162,7 @@ class MultiQueue {
     if(this.#queues.has(queueID)){
       queueInstance = this.#queues.get(queueID)
     }else{
-      const queue = await queueService.getQueueById(queueID)
+      const queue = await this.#queueService.getQueueById(queueID)
       if(!queue)
         throw new Error("Agent Logout, Queue wasnt founded")
       queueInstance = new Queue(queue._id,queue.name)
@@ -199,7 +201,4 @@ class MultiQueue {
   }
 }
 
-// Singleton EventManager
-const eventManager = new EventManager();
-
-module.exports = { MultiQueue, eventManager };
+module.exports = { MultiQueue };

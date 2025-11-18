@@ -1,10 +1,10 @@
-const JobHandler = require("../../../src/JobHandler");
-const JobVO = require("../../../src/Jobs/JobVO");
-const { processData } = require("../../../src/Jobs/pendingInteraction");
+const eventManager = require("rd-event-manager");
+const { processData } = require("../../../src/Jobs/pendingInteractionJob");
 const { MultiQueue } = require("../../../src/queue-system");
 const Queue = require("../../../src/Queue/application/Queue");
 const agentService = require("../../../src/Service/agent.service");
 const { randomTimeStampDate } = require("../../../src/Shared/Utils/date");
+const queueService = require("../../../src/Service/queue.service");
 
 describe('Handle pending interaction', () => {
 
@@ -13,7 +13,7 @@ describe('Handle pending interaction', () => {
     let ids=[],values=[],queue1,queue2,timestamp,item,agents
     
     beforeAll(async()=>{
-        multiQueue = new MultiQueue()
+        multiQueue = new MultiQueue(eventManager,queueService)
         agentServiceInstance = agentService
             
         //Creating Queue

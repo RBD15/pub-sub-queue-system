@@ -13,7 +13,7 @@ describe('JobHandler Class Tests',()=>{
     test('should add Job', async() => {
         jobHandler = new JobHandler()
         const payload = {msg:"Hola"}
-        const jobVO = new JobVO('pendingInteraction','pendingInteraction.js',payload,'5s')
+        const jobVO = new JobVO('pendingInteraction','pendingInteractionJob.js',payload,'5s')
         await jobHandler.add(jobVO)
         const jobs = jobHandler.getJobs()
         expect('pendingInteraction').toBe(jobs[0])

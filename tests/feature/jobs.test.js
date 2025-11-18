@@ -4,9 +4,9 @@ const agentService = require("../../src/Service/agent.service");
 const { randomTimeStampDate } = require("../../src/Shared/Utils/date");
 const JobHandler = require("../../src/JobHandler");
 const JobVO = require("../../src/Jobs/JobVO");
-const { Worker } = require('worker_threads');
-const path = require('path');
-const { processData } = require("../../src/Jobs/pendingInteraction");
+const { processData } = require("../../src/Jobs/pendingInteractionJob");
+const eventManager = require("rd-event-manager");
+const queueService = require("../../src/Service/queue.service");
 
 describe('Handle pending interaction', () => {
 
@@ -16,7 +16,7 @@ describe('Handle pending interaction', () => {
     let jobHandler,queue1,queue2,timestamp,firstAgent,secondAgent
 
     beforeAll(async()=>{
-        multiQueue = new MultiQueue()
+        multiQueue = new MultiQueue(eventManager,queueService)
         agentServiceInstance = agentService
             
         //Creating Queue
@@ -84,7 +84,7 @@ describe('Handle pending interaction', () => {
         
     //     const jobHandler = new JobHandler()
     //     const payload = {msg:"Hola"}
-    //     const jobVO = new JobVO('pendingInteraction','5s','pendingInteraction.js',payload)
+    //     const jobVO = new JobVO('pendingInteraction','5s','pendingInteractionJob.js',payload)
     //     await jobHandler.add(jobVO)
     //     await jobHandler.run()
 
@@ -101,7 +101,7 @@ describe('Handle pending interaction', () => {
 
         //Change JobVO interval and timeout, for run once use timeout
         const payload = {multiQueue:multiQueue}
-        const jobVO = new JobVO('pendingInteraction','pendingInteraction.js',payload,false,false)
+        const jobVO = new JobVO('pendingInteraction','pendingInteractionJob.js',payload,false,false)
         await jobHandler.add(jobVO)
 
         interactions = await multiQueue.getEnqueueHistory()

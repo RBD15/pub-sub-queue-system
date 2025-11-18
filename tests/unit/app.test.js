@@ -1,15 +1,18 @@
-const { MultiQueue, eventManager } = require('../../src/queue-system');
+const eventManager = require('rd-event-manager');
+const { MultiQueue } = require('../../src/queue-system');
 const Queue = require('../../src/Queue/application/Queue');
 const AgentStatus = require('../../src/Shared/Event/AgentStatus');
 const AgentUpdateStatusEvent = require('../../src/Shared/Event/AgentUpdateStatusEvent');
 const AgentUpdateStatusListener = require('../../src/Shared/Listener/AgentUpdateStatusListener');
 const { randomTimeStampDate } = require('../../src/Shared/Utils/date');
+const queueService = require('../../src/Service/queue.service');
 
 describe('Queue System Tests',()=>{
 
     let multiQueue
     beforeAll(() => {
-        multiQueue = new MultiQueue()
+
+        multiQueue = new MultiQueue(eventManager,queueService)
     });
 
     test('Create MultiQueue instance', () => {
@@ -57,16 +60,18 @@ describe('Queue System Tests',()=>{
     test('MultiQueue multi enqueues', () => {
         let ids=[],value,queue,timestamp
         ids.push('1000')
-        value = "Create user John"
         queue = new Queue(ids[0])
         multiQueue.createQueue(queue)
+
+        value = "Create user John"
         timestamp = randomTimeStampDate()
         multiQueue.enqueue(ids[0], value, timestamp);
 
         ids.push('2000')
-        value = "Create user Paul"
         queue = new Queue(ids[1])
         multiQueue.createQueue(queue)
+
+        value = "Create user Paul"
         timestamp = randomTimeStampDate()
         multiQueue.enqueue(ids[1], value, timestamp);
 
@@ -76,7 +81,36 @@ describe('Queue System Tests',()=>{
         expect(queueObject.has(ids[1])).toBe(true)
     });
 
+    test('should check pending interactions', () => {
+        multiQueue.cleanQueues()
+
+        let ids=[],value,queue,timestamp
+        ids.push('1000')
+        queue = new Queue(ids[0])
+        multiQueue.createQueue(queue)
+
+        value = "Interaction 1"
+        timestamp = randomTimeStampDate()
+        multiQueue.enqueue(ids[0], value, timestamp);
+
+        value = "Interaction 2"
+        timestamp = randomTimeStampDate()
+        multiQueue.enqueue(ids[0], value, timestamp);
+
+        value = "Interaction 3"
+        timestamp = randomTimeStampDate()
+        multiQueue.enqueue(ids[0], value, timestamp);
+
+        value = "Interaction 4"
+        timestamp = randomTimeStampDate()
+        multiQueue.enqueue(ids[0], value, timestamp);
+
+        const pendingInteractions = multiQueue.getEnqueueHistory()
+        expect(pendingInteractions.length).toBe(4)
+    });
+
     test('MultiQueue multi dequeue', () => {
+        multiQueue.cleanQueues()
         let ids=[],values=[],queue,timestamp,item
         ids.push('1000')
         values.push("Create user John")
@@ -728,7 +762,6 @@ describe('Queue System Tests',()=>{
        timestamp = randomTimeStampDate()
        multiQueue.enqueue(ids[0], values[0], timestamp)
 
-       
        values.push("Interaction 2")
        timestamp = randomTimeStampDate()
        multiQueue.enqueue(ids[0], values[1], timestamp)
