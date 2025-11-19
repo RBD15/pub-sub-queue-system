@@ -2,7 +2,7 @@ const EnqueueEvent = require("./shared/Event/EnqueueEvent");
 const DequeueEvent = require("./shared/Event/DequeueEvent");
 const Queue = require("./Queue/application/Queue");
 
-class MultiQueue {
+class QueueManager {
   #queues;
   #operation;
   #enqueueHistory;
@@ -201,4 +201,4 @@ class MultiQueue {
   }
 }
 
-module.exports = { MultiQueue };
+module.exports = { QueueManager };

@@ -1,13 +1,13 @@
 const { workerData,parentPort } = require('node:worker_threads');
 
 module.exports =  async () => {
-  const multiQueue = workerData.multiQueue 
+  const QueueManager = workerData.QueueManager 
   console.log("Running PendingInteraction Job",workerData);
-  await processData(multiQueue)  
+  await processData(QueueManager)  
 };
 
-async function processData(multiQueue){
-  await multiQueue.handleNextPendingInteraction()
+async function processData(QueueManager){
+  await QueueManager.handleNextPendingInteraction()
   if (parentPort) parentPort.postMessage('done');
   // else process.exit(0);
 }
