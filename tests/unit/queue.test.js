@@ -78,4 +78,39 @@ describe('Queue Class Tests',()=>{
         expect(agents.length).toBe(0)     
     });
 
+    test('should clean agents interactions', () => {
+        
+        const queue = new Queue('2000','2000')
+        const first = {
+            "_id": "600ce03161c06a843dfce111",
+            "name": "First",
+            "email": "test@correo.com",
+            "idQueue": [
+                {"_id": "68960b4f74b0b2262e7bdd52"},
+                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+            ],
+            "idOperation": "1234",
+            "online": true
+        }
+
+        const second = {
+            "_id": "600ce03161c06a843dfce222",
+            "name": "Second",
+            "email": "t@correo.com",
+            "idQueue": [
+                {"_id": "68960b4f74b0b2262e7bdd52"},
+                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+            ],
+            "idOperation": "1234",
+            "online": true
+        }
+
+        queue.setAgent(first)
+        queue.setAgent(second)
+
+        const agentAssigned = queue.assignAgent()
+        expect(agentAssigned.name).toBe(first.name)
+        expect(agentAssigned.interactions).toBe(1)      
+    });
+
 })

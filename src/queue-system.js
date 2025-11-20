@@ -143,32 +143,60 @@ class QueueManager {
     const removedCount = originalLength - this.#enqueueHistory.length;
   }
 
-  async agentLogged(queueID,agent){
-    let queueInstance
-    if(this.#queues.has(queueID)){
-      queueInstance = this.#queues.get(queueID)
-    }else{
-      const queue = await this.#queueService.getQueueById(queueID)
-      if(!queue)
-        throw new Error("Agent Logged, Queue wasnt founded")
-      queueInstance = new Queue(queue._id,queue.name)
-      this.#queues.set(queueID,queueInstance)
+  async agentLogged(queuesID, agent) {
+    for (const queueID of queuesID) {
+      let queueInstance;
+      if (this.#queues.has(queueID)) {
+        queueInstance = this.#queues.get(queueID);
+      } else {
+        const queue = await this.#queueService.getQueueById(queueID);
+        if (!queue) {
+          throw new Error("Agent Logged, Queue wasn't found");
+        }
+        queueInstance = new Queue(queue._id, queue.name);
+        this.#queues.set(queueID, queueInstance);
+      }
+      queueInstance.setAgent({ ...agent });
     }
-    queueInstance.setAgent({...agent})
   }
 
-  async agentLogout(queueID,agent){
-    let queueInstance
-    if(this.#queues.has(queueID)){
-      queueInstance = this.#queues.get(queueID)
-    }else{
-      const queue = await this.#queueService.getQueueById(queueID)
-      if(!queue)
-        throw new Error("Agent Logout, Queue wasnt founded")
-      queueInstance = new Queue(queue._id,queue.name)
-      this.#queues.set(queueID,queueInstance)
+  //V2 run parallel calls
+  // async agentLogged(queuesID, agent) {
+  //   const queuePromises = queuesID.map(async (queueID) => {
+  //     let queueInstance;
+
+  //     if (this.#queues.has(queueID)) {
+  //       queueInstance = this.#queues.get(queueID);
+  //     } else {
+  //       const queue = await this.#queueService.getQueueById(queueID);
+  //       if (!queue) {
+  //         throw new Error("Agent Logged, Queue wasn't found");
+  //       }
+  //       queueInstance = new Queue(queue._id, queue.name);
+  //       this.#queues.set(queueID, queueInstance);
+  //     }
+
+  //     queueInstance.setAgent({ ...agent });
+  //   });
+
+  //   await Promise.all(queuePromises);
+  // }
+
+
+  async agentLogout(queuesID,agent){
+    for (const queueID of queuesID) {
+      let queueInstance
+      if(this.#queues.has(queueID)){
+        queueInstance = this.#queues.get(queueID)
+      }else{
+        const queue = await this.#queueService.getQueueById(queueID)
+        if(!queue)
+          throw new Error("Agent Logout, Queue wasnt founded")
+        queueInstance = new Queue(queue._id,queue.name)
+        this.#queues.set(queueID,queueInstance)
+      }
+      queueInstance.updateAgent({...agent})
     }
-    queueInstance.updateAgent({...agent})
   }
 
   getAgentByQueue(queueId){

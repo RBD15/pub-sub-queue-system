@@ -1,4 +1,4 @@
-const { MultiQueue } = require("../../src/queue-system");
+const { QueueManager } = require("../../src/queue-system");
 const Queue = require("../../src/Queue/application/Queue");
 const agentService = require("../../src/Service/agent.service");
 const { randomTimeStampDate } = require("../../src/Shared/Utils/date");
@@ -10,41 +10,41 @@ const queueService = require("../../src/Service/queue.service");
 
 describe('Handle pending interaction', () => {
 
-    let multiQueue
+    let queueManager
     let agentServiceInstance
     let ids=[],values=[]
     let jobHandler,queue1,queue2,timestamp,firstAgent,secondAgent
 
     beforeAll(async()=>{
-        multiQueue = new MultiQueue(eventManager,queueService)
+        queueManager = new QueueManager(eventManager,queueService)
         agentServiceInstance = agentService
             
         //Creating Queue
         ids.push('1000')
         queue1 = new Queue(ids[0])
-        multiQueue.createQueue(queue1)
+        queueManager.createQueue(queue1)
 
         ids.push('2000')
         queue2 = new Queue(ids[1])
-        multiQueue.createQueue(queue2)
+        queueManager.createQueue(queue2)
 
         //Enqueue Interactions
         values.push("Interaction 1 queue1000")
         timestamp = randomTimeStampDate()
-        multiQueue.enqueue(ids[0], values[0], timestamp)
+        queueManager.enqueue(ids[0], values[0], timestamp)
 
         values.push("Interaction 2 queue1000")
         timestamp = randomTimeStampDate()
-        multiQueue.enqueue(ids[0], values[1], timestamp)
+        queueManager.enqueue(ids[0], values[1], timestamp)
 
         values.push("Interaction 3 queue1000")
         timestamp = randomTimeStampDate()
-        multiQueue.enqueue(ids[0], values[2], timestamp)
+        queueManager.enqueue(ids[0], values[2], timestamp)
 
         values.push("Interaction 1 queue2000")
 
         timestamp = randomTimeStampDate()
-        multiQueue.enqueue(ids[1], values[3], timestamp)
+        queueManager.enqueue(ids[1], values[3], timestamp)
 
         //Record Agent
         firstAgent = {
@@ -71,11 +71,11 @@ describe('Handle pending interaction', () => {
             "online": true
         }
 
-        await multiQueue.agentLogged(queue1.getId(),firstAgent)
+        await queueManager.agentLogged([queue1.getId()],firstAgent)
         await agentServiceInstance.create(firstAgent)
-        await multiQueue.agentLogged(queue1.getId(),secondAgent)
+        await queueManager.agentLogged([queue1.getId()],secondAgent)
         await agentServiceInstance.create(secondAgent)
-        await multiQueue.agentLogged(queue2.getId(),secondAgent)
+        await queueManager.agentLogged([queue2.getId()],secondAgent)
 
         jobHandler = new JobHandler()
     })
@@ -100,15 +100,15 @@ describe('Handle pending interaction', () => {
         await jobHandler.removeAll()
 
         //Change JobVO interval and timeout, for run once use timeout
-        const payload = {multiQueue:multiQueue}
+        const payload = {queueManager:queueManager}
         const jobVO = new JobVO('pendingInteraction','pendingInteractionJob.js',payload,false,false)
         await jobHandler.add(jobVO)
 
-        interactions = await multiQueue.getEnqueueHistory()
+        interactions = await queueManager.getEnqueueHistory()
         expect(4).toBe(interactions.length)
 
-        await processData(multiQueue)
-        interactions = await multiQueue.getEnqueueHistory()
+        await processData(queueManager)
+        interactions = await queueManager.getEnqueueHistory()
         expect(3).toBe(interactions.length)
 
      });

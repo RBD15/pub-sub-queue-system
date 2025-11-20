@@ -1,6 +1,6 @@
 {
   "name": "rd-queue-system",
-  "version": "0.0.3",
+  "version": "0.3.2",
   "description": "A queue system, create queue, login and logout agents, enqueue interaction and handle interactions with agents available",
   "main": "index.js",
   "scripts": {

@@ -1,5 +1,5 @@
 const eventManager = require('rd-event-manager');
-const { MultiQueue } = require('../../src/queue-system');
+const { QueueManager } = require('../../src/queue-system');
 const Queue = require('../../src/Queue/application/Queue');
 const AgentStatus = require('../../src/Shared/Event/AgentStatus');
 const AgentUpdateStatusEvent = require('../../src/Shared/Event/AgentUpdateStatusEvent');
@@ -12,11 +12,11 @@ describe('Queue System Tests',()=>{
     let multiQueue
     beforeAll(() => {
 
-        multiQueue = new MultiQueue(eventManager,queueService)
+        multiQueue = new QueueManager(eventManager,queueService)
     });
 
-    test('Create MultiQueue instance', () => {
-        expect(multiQueue).toBeInstanceOf(MultiQueue);
+    test('Create QueueManager instance', () => {
+        expect(multiQueue).toBeInstanceOf(QueueManager);
     });
 
     test('Create Queue', () => {
@@ -26,7 +26,7 @@ describe('Queue System Tests',()=>{
         expect(queue.getId()).toBe(id)
     });
 
-    test('Create MultiQueue queue', () => {
+    test('Create QueueManager queue', () => {
         const id = '1000'
         const queue = new Queue(id)
         multiQueue.createQueue(queue)
@@ -34,7 +34,7 @@ describe('Queue System Tests',()=>{
         expect(queue.getId()).toBe(id)
     });
 
-    test('Create MultiQueue enqueue', () => {
+    test('Create QueueManager enqueue', () => {
         const id = '1000'
         const value = "Create user John"
         const queue = new Queue(id)
@@ -46,7 +46,7 @@ describe('Queue System Tests',()=>{
         expect(queueObject.has(id)).toBe(true)
     });
 
-    test('Create MultiQueue dequeue', () => {
+    test('Create QueueManager dequeue', () => {
         const id = '1000'
         const value = "Create user John"
         const queue = new Queue(id)
@@ -57,7 +57,7 @@ describe('Queue System Tests',()=>{
         expect(item.value).toBe(value)
     });
 
-    test('MultiQueue multi enqueues', () => {
+    test('QueueManager multi enqueues', () => {
         let ids=[],value,queue,timestamp
         ids.push('1000')
         queue = new Queue(ids[0])
@@ -109,7 +109,7 @@ describe('Queue System Tests',()=>{
         expect(pendingInteractions.length).toBe(4)
     });
 
-    test('MultiQueue multi dequeue', () => {
+    test('QueueManager multi dequeue', () => {
         multiQueue.cleanQueues()
         let ids=[],values=[],queue,timestamp,item
         ids.push('1000')
@@ -134,7 +134,7 @@ describe('Queue System Tests',()=>{
         expect(item.value).toBe(values[1])
     });
 
-    test('MultiQueue multi dequeue using order', () => {
+    test('QueueManager multi dequeue using order', () => {
         let ids=[],values=[],queue,timestamp,item
         multiQueue.cleanQueues()
 
@@ -178,7 +178,7 @@ describe('Queue System Tests',()=>{
         expect(item.value).toBe(values[3])
     })
 
-    test('MultiQueue agentLogged', async () => {
+    test('QueueManager agentLogged', async () => {
 
         multiQueue.cleanQueues()
         let ids=[],agent,values=[],queue,timestamp,currentAgents
@@ -208,14 +208,14 @@ describe('Queue System Tests',()=>{
         currentAgents = multiQueue.getAgentByQueue('1000')
         expect(currentAgents.length).toBe(0)
         
-        await multiQueue.agentLogged(queue.getId(),firstAgent)
+        await multiQueue.agentLogged([queue.getId()],firstAgent)
         currentAgents = multiQueue.getAgentByQueue('1000')
         
         expect(currentAgents.length).toBe(1)
         expect(currentAgents[0].name).toBe(firstAgent.name)
     });
     
-    test('MultiQueue handleNextPendingInteraction only one queue', async () => {
+    test('QueueManager handleNextPendingInteraction only one queue', async () => {
         multiQueue.cleanQueues()
         let ids=[],agent,values=[],queue,timestamp,item
         //Creating Queue
@@ -257,7 +257,7 @@ describe('Queue System Tests',()=>{
             "online": true
         }
         
-        await multiQueue.agentLogged(queue.getId(),firstAgent)
+        await multiQueue.agentLogged([queue.getId()],firstAgent)
         
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(firstAgent.name)
@@ -275,7 +275,7 @@ describe('Queue System Tests',()=>{
             "idOperation": "1234",
             "online": true
         }
-        await multiQueue.agentLogged(queue.getId(),secondAgent)
+        await multiQueue.agentLogged([queue.getId()],secondAgent)
         
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(secondAgent.name)
@@ -293,7 +293,7 @@ describe('Queue System Tests',()=>{
             "idOperation": "1234",
             "online": true
         }
-        await multiQueue.agentLogged(queue.getId(),thirdAgent)
+        await multiQueue.agentLogged([queue.getId()],thirdAgent)
         
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(thirdAgent.name)
@@ -308,7 +308,7 @@ describe('Queue System Tests',()=>{
         expect(agent.interactions).toBe(2)
     });
 
-    test('MultiQueue handleNextPendingInteraction two queue', async () => {
+    test('QueueManager handleNextPendingInteraction two queue', async () => {
 
         multiQueue.cleanQueues()
         let ids=[],agent,values=[],queue1,queue2,timestamp,item
@@ -348,8 +348,8 @@ describe('Queue System Tests',()=>{
             "online": true
         }
 
-        await multiQueue.agentLogged(queue1.getId(),firstAgent)
-        await multiQueue.agentLogged(queue2.getId(),firstAgent)
+        await multiQueue.agentLogged([queue1.getId()],firstAgent)
+        await multiQueue.agentLogged([queue2.getId()],firstAgent)
 
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(firstAgent.name)
@@ -388,14 +388,14 @@ describe('Queue System Tests',()=>{
             "idOperation": "1234",
             "online": true
         }
-        await multiQueue.agentLogged(queue2.getId(),secondAgent)
+        await multiQueue.agentLogged([queue2.getId()],secondAgent)
             
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(secondAgent.name)
         expect(agent.interactions).toBe(1)
     });
 
-    test('MultiQueue handleNextPendingInteraction four queues and 5 agents', async () => {
+    test('QueueManager handleNextPendingInteraction four queues and 5 agents', async () => {
 
         multiQueue.cleanQueues()
         let ids=[],agent,values=[],queue1,queue2,timestamp,item
@@ -475,9 +475,9 @@ describe('Queue System Tests',()=>{
             "online": true
         }
 
-        await multiQueue.agentLogged(queue1.getId(),firstAgent)
-        await multiQueue.agentLogged(queue1.getId(),secondAgent)
-        await multiQueue.agentLogged(queue2.getId(),secondAgent)
+        await multiQueue.agentLogged([queue1.getId()],firstAgent)
+        await multiQueue.agentLogged([queue1.getId()],secondAgent)
+        await multiQueue.agentLogged([queue2.getId()],secondAgent)
 
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(firstAgent.name)
@@ -524,9 +524,9 @@ describe('Queue System Tests',()=>{
             "online": true
         }
 
-        await multiQueue.agentLogged(queue3.getId(),thirdAgent)
-        await multiQueue.agentLogged(queue3.getId(),secondAgent)
-        await multiQueue.agentLogged(queue4.getId(),fourAgent)
+        await multiQueue.agentLogged([queue3.getId()],thirdAgent)
+        await multiQueue.agentLogged([queue3.getId()],secondAgent)
+        await multiQueue.agentLogged([queue4.getId()],fourAgent)
         
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(thirdAgent.name)
@@ -540,7 +540,7 @@ describe('Queue System Tests',()=>{
         timestamp = randomTimeStampDate()
         multiQueue.enqueue(ids[4], values[9], timestamp)
         
-        await multiQueue.agentLogged(queue5.getId(),firstAgent)
+        await multiQueue.agentLogged([queue5.getId()],firstAgent)
             
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(fourAgent.name)
@@ -551,7 +551,7 @@ describe('Queue System Tests',()=>{
         expect(agent.interactions).toBe(1)
     });
 
-    test('MultiQueue agentLogout', async () => {
+    test('QueueManager agentLogout', async () => {
 
         multiQueue.cleanQueues()
         let ids=[],agent,values=[],queue1,queue2,timestamp,item
@@ -603,9 +603,9 @@ describe('Queue System Tests',()=>{
             "online": true
         }
 
-        await multiQueue.agentLogged(queue1.getId(),firstAgent)
-        await multiQueue.agentLogged(queue1.getId(),secondAgent)
-        await multiQueue.agentLogged(queue2.getId(),secondAgent)
+        await multiQueue.agentLogged([queue1.getId()],firstAgent)
+        await multiQueue.agentLogged([queue1.getId()],secondAgent)
+        await multiQueue.agentLogged([queue2.getId()],secondAgent)
 
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(firstAgent.name)
@@ -615,18 +615,18 @@ describe('Queue System Tests',()=>{
         expect(agent.name).toBe(secondAgent.name)
         expect(agent.interactions).toBe(1)
 
-        await multiQueue.agentLogout(queue2.getId(),secondAgent)
+        await multiQueue.agentLogout([queue2.getId()],secondAgent)
     
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent).toBe(undefined)
 
-        await multiQueue.agentLogged(queue2.getId(),secondAgent)
+        await multiQueue.agentLogged([queue2.getId()],secondAgent)
         agent = await multiQueue.handleNextPendingInteraction()
         expect(agent.name).toBe(secondAgent.name)
         expect(agent.interactions).toBe(1)
     });
 
-    test('MultiQueue multi enqueues', () => {
+    test('QueueManager multi enqueues', () => {
         let ids=[],value,queue,timestamp
 
         const queueDoesntExist = '3000'
@@ -649,10 +649,10 @@ describe('Queue System Tests',()=>{
         }).toThrow(`La cola ${queueDoesntExist} no existe.`);
     });
 
-    test('MultiQueue fail loggedAgent', async () => {
+    test('QueueManager fail loggedAgent', async () => {
 
       multiQueue.cleanQueues()
-      let ids=[],agent,values=[],queue1,queue2,timestamp,item
+      let ids=[],agent,values=[],queue1,timestamp
             
       //Creating Queue
       ids.push('1000')
@@ -697,15 +697,15 @@ describe('Queue System Tests',()=>{
           "online": true
       }
 
-      await multiQueue.agentLogged(queue1.getId(),firstAgent)
-      await multiQueue.agentLogged(queue1.getId(),secondAgent)
-      await expect(multiQueue.agentLogged('',secondAgent))
+      await multiQueue.agentLogged([queue1.getId()],firstAgent)
+      await multiQueue.agentLogged([queue1.getId()],secondAgent)
+      await expect(multiQueue.agentLogged([''],secondAgent))
       .rejects
       .toThrow("Queue id didnt find");
 
     });
 
-    // test('MultiQueue Fail handleNextPendingInteraction', async () => {
+    // test('QueueManager Fail handleNextPendingInteraction', async () => {
         
     //     multiQueue.cleanQueues()
     //     let ids=[],agent,values=[],queue,timestamp,item
@@ -746,7 +746,7 @@ describe('Queue System Tests',()=>{
 
     // });
 
-    test('MultiQueue testing dispatching AgentStatusEvent', async () => {
+    test('QueueManager testing dispatching AgentStatusEvent', async () => {
         
        multiQueue.cleanQueues()
        let ids=[],agent,values=[],queue1,queue2,timestamp,event,currentAgents
@@ -786,7 +786,7 @@ describe('Queue System Tests',()=>{
        expect(agent).toBe(undefined)
 
        event = new AgentUpdateStatusEvent(
-           ids[0],
+           [ids[0]],
            firstAgent,
            AgentStatus.LOGIN,
            'agent-change-status'
@@ -805,7 +805,7 @@ describe('Queue System Tests',()=>{
        expect(agent.interactions).toBe(2)
 
        event = new AgentUpdateStatusEvent(
-           ids[0],
+           [ids[0]],
            firstAgent,
            AgentStatus.LOGOUT,
            'agent-change-status'
