@@ -1,6 +1,4 @@
-const agentService = require("../../Service/agent.service")
 const queueService = require("../../Service/queue.service")
-const setting = require("../../Shared/Setting")
 
 class Queue {
   
