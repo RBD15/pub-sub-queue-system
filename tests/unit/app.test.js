@@ -6,6 +6,9 @@ const AgentUpdateStatusEvent = require('../../src/Shared/Event/AgentUpdateStatus
 const AgentUpdateStatusListener = require('../../src/Shared/Listener/AgentUpdateStatusListener');
 const { randomTimeStampDate } = require('../../src/Shared/Utils/date');
 const queueService = require('../../src/Service/queue.service');
+const EnqueueEvent = require('../../src/Shared/Event/EnqueueEvent');
+const EnqueueListener = require('../../src/Shared/Listener/EnqueueListener');
+const EnqueueInteraction = require('../../src/Queue/Domain/EnqueueInteraction');
 
 describe('Queue System Tests',()=>{
 
@@ -42,6 +45,22 @@ describe('Queue System Tests',()=>{
 
         
         multiQueue.enqueue(id, value, 1);
+        const queueObject = multiQueue.getQueues()
+        expect(queueObject.has(id)).toBe(true)
+    });
+
+    test('Create QueueManager enqueue event', () => {
+        eventManager.subscribe('QUEUE_ENQUEUED', new EnqueueListener(multiQueue));
+        const id = '1000'
+        const value = "Create user John"
+        const queue = new Queue(id)
+        multiQueue.createQueue(queue)
+
+        eventManager.emit(new EnqueueEvent(
+            'QUEUE_ENQUEUED',
+            new EnqueueInteraction(id,value,1)
+        ))
+        // multiQueue.enqueue(id, value, 1);
         const queueObject = multiQueue.getQueues()
         expect(queueObject.has(id)).toBe(true)
     });

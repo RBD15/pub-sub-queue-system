@@ -1,5 +1,4 @@
-const EnqueueEvent = require("./shared/Event/EnqueueEvent");
-const DequeueEvent = require("./shared/Event/DequeueEvent");
+const DequeueEvent = require("./Shared/Event/DequeueEvent");
 const Queue = require("./Queue/application/Queue");
 
 class QueueManager {
@@ -80,11 +79,6 @@ class QueueManager {
       timestamp,
       queueId
     });
-
-    // Publish event on enqueue
-    this.#eventManager.emit(
-      new EnqueueEvent('QUEUE_ENQUEUED',{data: { queueId, item }})
-    );
   }
 
   dequeueFromSelectedQueues(queueIds,all=false) {
@@ -126,9 +120,9 @@ class QueueManager {
     );
 
     // Publish event on dequeue
-    this.#eventManager.emit(
-      new DequeueEvent('QUEUE_DEQUEUED',{data: { queueId, item }})
-    );
+    // this.#eventManager.emit(
+    //   new DequeueEvent('QUEUE_DEQUEUED',{data: { queueId, item }})
+    // );
 
     return { ...item, fromQueue: queueId };
   }
@@ -181,7 +175,6 @@ class QueueManager {
 
   //   await Promise.all(queuePromises);
   // }
-
 
   async agentLogout(queuesID,agent){
     for (const queueID of queuesID) {
