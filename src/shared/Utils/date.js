@@ -3,6 +3,13 @@ function isValidTimestamp(str) {
   return !isNaN(date.getTime());
 }
 
+function getCurrentTimeStamp(){
+    const now = new Date();
+    // Create a new date with the random offset
+    const timestamp = new Date(now.getTime());
+    return timestamp
+}
+
 function randomTimeStampDate(){
     const now = new Date();
 
@@ -16,4 +23,4 @@ function randomTimeStampDate(){
     return timestamp
 }
 
-module.exports = {randomTimeStampDate,isValidTimestamp}
+module.exports = {randomTimeStampDate,isValidTimestamp,getCurrentTimeStamp}
