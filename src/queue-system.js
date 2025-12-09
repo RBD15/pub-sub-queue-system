@@ -1,30 +1,25 @@
-const DequeueEvent = require("./Shared/Event/DequeueEvent");
-const Queue = require("./Queue/application/Queue");
+//TODO: QueueManager
+// Store EnqueueInteractions
+// handleNextPendingInteraction
+// AssignAgent To handler older pendingInteractions
+
+const QueueInterface = require("./Queue/Domain/QueueInterface");
 
 class QueueManager {
-  #queues;
-  #operation;
+  
   #enqueueHistory;
-  #eventManager
-  #queueService
-
-  constructor(eventManager,queueService) {
-    this.#queues = new Map();
-    this.#operation = "1234"
-    this.#enqueueHistory = [];
-    this.#eventManager = eventManager
-    this.#queueService = queueService
-  }
-
-  async createQueue(queue) { 
-    const queueId = queue.getId()
-    if (!this.#queues.has(queueId)) {
-      this.#queues.set(queueId, queue)
+  #queueImplementation
+  
+  constructor(queueImplementation) {
+    if (!queueImplementation || !(queueImplementation instanceof QueueInterface)) {   
+      throw new Error("QueueInterface implementation is required to create QueueManager");
     }
+    this.#enqueueHistory = [];
+    this.#queueImplementation = queueImplementation
   }
 
   async handleNextPendingInteraction(){
-    let currentQueue,agent
+
     try {      
       if(!this.isPendingInteractions())
         return;
@@ -33,13 +28,8 @@ class QueueManager {
 
         const interaction = this.#enqueueHistory[index]
         const queueId = interaction.queueId
+        const agent = await this.#queueImplementation.assignAgent(interaction.idOperation, queueId)
         
-        currentQueue = this.#queues.get(queueId)
-        if(!currentQueue)
-          return;
-
-        agent = currentQueue.assignAgent()
-
         if(!agent){
           return
         }
@@ -49,7 +39,6 @@ class QueueManager {
         return agent
       }
     } catch (error) {
-      console.log("QueueSystem",error);
       return
     }
   }
@@ -58,74 +47,72 @@ class QueueManager {
     return this.#enqueueHistory.length > 0
   }
 
-  enqueue(queueId, value, dateTimestamp='' ) {
+  enqueue(idOperation,queueId, value, dateTimestamp='' ) {
     let timestamp
-    if (!this.#queues.has(queueId)) {
-      throw new Error(`La cola ${queueId} no existe.`);
-    }
+    // if (!this.#queues.has(queueId)) {
+    //   throw new Error(`La cola ${queueId} no existe.`);
+    // }
         
     if(dateTimestamp){
       timestamp = new Date(dateTimestamp)
     }else{
       timestamp = new Date()
     }
-    const item = { value, timestamp , retries: 0 };
-    const queue = this.#queues.get(queueId) 
-    queue.setItems(item)
 
     // Registrar en historial
     this.#enqueueHistory.push({
+      idOperation,
       value,
       timestamp,
       queueId
-    });
-  }
-
-  dequeueFromSelectedQueues(queueIds,all=false) {
-    let candidates = [];
-
-    if(!all){
-      for (const id of queueIds) {
-        const queue = this.#queues.get(id);
-        if (queue && queue.getItems().length > 0) {
-          candidates.push({ item: queue.getItems()[0], queueId: id });
-        }
-      }
-      // console.log("Candidates Disorder",candidates);
-      if (candidates.length === 0) return null;
-
-    }else{
-      this.#queues.forEach((queue,id)=>{
-        candidates.push({ item: queue.getItems()[0], queueId: id }) 
-      })
-      return candidates
-    }
-
-    // Ordenar por prioridad descendente, luego por antigüedad
-    candidates.sort((a, b) => {
-      // if (b.item.priority !== a.item.priority) {
-      //   return b.item.priority - a.item.priority;
-      // }
-      //Modifiy to timestamp to improve times evaluating 
-      const timeA = new Date(a.item.timestamp).getTime();
-      const timeB = new Date(b.item.timestamp).getTime();
-      return timeA - timeB;
     });    
-    const { item, queueId } = candidates[0];
-    const queueFounded = this.#queues.get(queueId); // Eliminar el elemento
-    queueFounded.shiftLastItem()
-
-    this.#enqueueHistory = this.#enqueueHistory.filter(
-      entry => !(entry.value === item.value && entry.timestamp.getTime() === new Date(item.timestamp).getTime() && entry.queueId === queueId)
-    );
-
-    // Publish event on dequeue
-    // this.#eventManager.emit(
-    //   new DequeueEvent('QUEUE_DEQUEUED',{data: { queueId, item }})
-    // );
-
-    return { ...item, fromQueue: queueId };
   }
+
+  // dequeueFromSelectedQueues(queueIds,all=false) {
+  //   let candidates = [];
+
+  //   if(!all){
+  //     for (const id of queueIds) {
+  //       const queue = this.#queues.get(id);
+  //       if (queue && queue.getItems().length > 0) {
+  //         candidates.push({ item: queue.getItems()[0], queueId: id });
+  //       }
+  //     }
+  //     // console.log("Candidates Disorder",candidates);
+  //     if (candidates.length === 0) return null;
+
+  //   }else{
+  //     this.#queues.forEach((queue,id)=>{
+  //       candidates.push({ item: queue.getItems()[0], queueId: id }) 
+  //     })
+  //     return candidates
+  //   }
+
+  //   // Ordenar por prioridad descendente, luego por antigüedad
+  //   candidates.sort((a, b) => {
+  //     // if (b.item.priority !== a.item.priority) {
+  //     //   return b.item.priority - a.item.priority;
+  //     // }
+  //     //Modifiy to timestamp to improve times evaluating 
+  //     const timeA = new Date(a.item.timestamp).getTime();
+  //     const timeB = new Date(b.item.timestamp).getTime();
+  //     return timeA - timeB;
+  //   });    
+  //   const { item, queueId } = candidates[0];
+  //   const queueFounded = this.#queues.get(queueId); // Eliminar el elemento
+  //   queueFounded.shiftLastItem()
+
+  //   this.#enqueueHistory = this.#enqueueHistory.filter(
+  //     entry => !(entry.value === item.value && entry.timestamp.getTime() === new Date(item.timestamp).getTime() && entry.queueId === queueId)
+  //   );
+
+  //   // Publish event on dequeue
+  //   // this.#eventManager.emit(
+  //   //   new DequeueEvent('QUEUE_DEQUEUED',{data: { queueId, item }})
+  //   // );
+
+  //   return { ...item, fromQueue: queueId };
+  // }
 
   getEnqueueHistory() {
     return this.#enqueueHistory;
@@ -137,89 +124,30 @@ class QueueManager {
     const removedCount = originalLength - this.#enqueueHistory.length;
   }
 
-  async agentLogged(queuesID, agent) {
-    for (const queueID of queuesID) {
-      let queueInstance;
-      if (this.#queues.has(queueID)) {
-        queueInstance = this.#queues.get(queueID);
-      } else {
-        const queue = await this.#queueService.getQueueById(queueID);
-        if (!queue) {
-          throw new Error("Agent Logged, Queue wasn't found");
-        }
-        queueInstance = new Queue(queue._id, queue.name);
-        this.#queues.set(queueID, queueInstance);
-      }
-      queueInstance.setAgent({ ...agent });
-    }
+  async getAgentByQueue(operationId,queueId){
+    return await this.#queueImplementation.getAgents(operationId,queueId)
   }
 
-  //V2 run parallel calls
-  // async agentLogged(queuesID, agent) {
-  //   const queuePromises = queuesID.map(async (queueID) => {
-  //     let queueInstance;
-
-  //     if (this.#queues.has(queueID)) {
-  //       queueInstance = this.#queues.get(queueID);
-  //     } else {
-  //       const queue = await this.#queueService.getQueueById(queueID);
-  //       if (!queue) {
-  //         throw new Error("Agent Logged, Queue wasn't found");
-  //       }
-  //       queueInstance = new Queue(queue._id, queue.name);
-  //       this.#queues.set(queueID, queueInstance);
-  //     }
-
-  //     queueInstance.setAgent({ ...agent });
-  //   });
-
-  //   await Promise.all(queuePromises);
+  // retryElement(queueId) {
+  //   const queue = this.#queues.get(queueId);
+  //   if (queue && queue.getItems().length > 0) {
+  //     queue.getItems()[0].retries += 1;
+  //   }
   // }
 
-  async agentLogout(queuesID,agent){
-    for (const queueID of queuesID) {
-      let queueInstance
-      if(this.#queues.has(queueID)){
-        queueInstance = this.#queues.get(queueID)
-      }else{
-        const queue = await this.#queueService.getQueueById(queueID)
-        if(!queue)
-          throw new Error("Agent Logout, Queue wasnt founded")
-        queueInstance = new Queue(queue._id,queue.name)
-        this.#queues.set(queueID,queueInstance)
-      }
-      queueInstance.updateAgent({...agent})
-    }
-  }
+  // printQueues() {
+  //   for (const [id, queue] of this.#queues.entries()) {
+  //     queue.getItems().forEach((item, index) => {
+  //       console.log(`  [${index}] ${item.value} | reintentos: ${item.retries} | fecha: ${item.timestamp.toISOString()}`);
+  //     });
+  //   }
+  // }
 
-  getAgentByQueue(queueId){
-    return this.#queues.get(queueId).getAgents()
-  }
-
-  retryElement(queueId) {
-    const queue = this.#queues.get(queueId);
-    if (queue && queue.getItems().length > 0) {
-      queue.getItems()[0].retries += 1;
-    }
-  }
-
-  printQueues() {
-    for (const [id, queue] of this.#queues.entries()) {
-      console.log(`Cola "${id}":`);
-      queue.getItems().forEach((item, index) => {
-        console.log(`  [${index}] ${item.value} | reintentos: ${item.retries} | fecha: ${item.timestamp.toISOString()}`);
-      });
-    }
-  }
-
-  cleanQueues(){
-    this.#queues = new Map()
+  async cleanQueues(){
     this.#enqueueHistory = []
+    await this.#queueImplementation.clean()
   }
 
-  getQueues(){
-    return this.#queues
-  }
 }
 
 module.exports = { QueueManager };

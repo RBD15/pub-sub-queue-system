@@ -1,11 +1,9 @@
-// const { default: mongoose } = require("mongoose");
-// const agent = require("../models/agent")
 
 class AgentService{
 
-  #agent
+  #agents
   constructor(){
-    this.#agent = []
+    this.#agents = new Map();
   }
 
   async get(idOperation,availableOnly = false){
@@ -13,37 +11,26 @@ class AgentService{
     if(availableOnly){
       findParams.online = true
     }    
-    const allAgents = this.#agent.filter((agent) => agent.idOperation == findParams.idOperation && agent.online == findParams.online)
+    const allAgents =  Array.from(this.#agents.values()).filter((agent) => agent.idOperation == findParams.idOperation && agent.online == findParams.online)
     return allAgents;
   }
 
   async getAgentsByOperationAndQueue(idOperation,idQueue,availableOnly = false) {     
     try {
-      let match = {
-        idQueue:new mongoose.Types.ObjectId(idQueue),
+      let findParams = {
+        idQueue:idQueue,
         idOperation: idOperation
       }
       if(availableOnly){
-        match.online = true
+        findParams.online = true
       }
+      const allAgents =  Array.from(this.#agents.values())
+      .filter((agent) =>
+        agent.idOperation == findParams.idOperation && agent.online == findParams.online && agent.idQueue.some(queue => queue._id === findParams.idQueue._id))      
 
-      const result = await this.#agent.aggregate([
-        {
-          $match: match
-        },
-        {
-          $lookup: {
-              from: 'queues', // nombre de la colección en MongoDB
-              localField: 'idQueue',
-              foreignField: '_id',
-              as: 'CurrentQueues'
-          }
-        }
-      ]);
+      return allAgents;
 
-      return result;
     } catch (error) {
-      console.error('Error al obtener los agentes:', error);
       throw error;
     }
   }
@@ -53,12 +40,16 @@ class AgentService{
     if(availableOnly){
       findParams.online = true
     }
-    const allAgents = this.#agent.filter(agent => agent.online && agent.idQueue.some(queue => queue._id === findParams.idQueue)  );
+    
+    const allAgents = Array.from(this.#agents.values())
+      .filter(agent => 
+        agent.online && agent.idQueue.some(queue =>queue._id === findParams.idQueue._id)
+      );
     return allAgents;
   }
   
   async getAgentById(uid){
-    const agent = this.#agent.filter(agent => agent._id === uid );
+    const agent = this.#agents.get(uid);
 
     if(!agent || agent.length == 0){
       throw new Error('Agent id didnt find');
@@ -67,18 +58,37 @@ class AgentService{
   }
 
   async getAgentByEmail(email){
-    const agent = this.#agent.filter(agent => agent.email === email );
+    const agent = Array.from(this.#agents.values()).filter(agent => agent.email === email );
     if(!agent || agent.length == 0){
       throw new Error('Agent email didnt find');
     }
     return agent[0]
   }
 
+  async updateInteractions(agentId) {    
+    if (this.#agents.has(agentId)) {
+      this.#agents.get(agentId).interactions++;
+    }
+  }
+
+  async isOnline(agentId){
+    if (this.#agents.has(agentId)) {
+      return this.#agents.get(agentId).online == true
+    }
+    return false
+  }
+
   async create(agent){
-    this.#agent.push(agent)
+    agent.interactions = 0
+    this.#agents.set(agent._id,agent)
     return agent
   }
 
+  async updateAgentStatus(agentId,onlineStatus){
+    if (this.#agents.has(agentId)) {
+      this.#agents.get(agentId).online = onlineStatus;
+    }
+  }
 
 }
 const agentService = new AgentService()
