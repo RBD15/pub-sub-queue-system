@@ -2,8 +2,9 @@ const agentService = require("../../../src/Service/agent.service")
 
 describe('Agent services tests',()=>{
 
-    let agentInstanceService,agents
+    let agentInstanceService,agents,idOperation
     beforeAll(()=>{
+        idOperation = "1234"
         agentInstanceService = agentService
         agents = [
             {
@@ -11,8 +12,8 @@ describe('Agent services tests',()=>{
                 "name": "Rober",
                 "email": "r@correo.com",
                 "idQueue": [
-                    {"_id": "68960b4f74b0b2262e7bdd52"},
-                    {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                    {"_id": "1000"},
+                    {"_id": "2000"}
                 ],
                 "idOperation": "1234",
                 "online": true
@@ -22,8 +23,7 @@ describe('Agent services tests',()=>{
                 "name": "Prueba",
                 "email": "test@correo.com",
                 "idQueue": [
-                    {"_id": "68960b4f74b0b2262e7bdd52"},
-                    {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                    {"_id": "1000"}
                 ],
                 "idOperation": "1234",
                 "online": false
@@ -34,42 +34,66 @@ describe('Agent services tests',()=>{
     })
 
     test('Create Agent', async() => {
-        const idOperation = "1234"
         const agentsAvailable = await agentInstanceService.create(agents[0])
         const agent = agentsAvailable
-        console.log(agent);
         expect(agents[0].name).toBe(agent.name)
     });
     
     test('Get agents by Operation and online', async() => {
-        const idOperation = "1234"
+        await agentInstanceService.create(agents[0])
         const agentsAvailable = await agentInstanceService.get(idOperation,'true')
         const agent = agentsAvailable[0]
         expect(idOperation).toBe(agent.idOperation)
     });
 
     test('Get agents by idQueue and online', async() => {
-        const name = "Rober"
-        const agentsAvailable = await agentInstanceService.getAll("68960b4f74b0b2262e7bdd52","true")
+        await agentInstanceService.create(agents[0])
+        const idQueue = agents[0].idQueue[0]
+        const name = agents[0].name
+        const agentsAvailable = await agentInstanceService.getAll(idQueue,'true')
         const agent = agentsAvailable[0]
         expect(name).toBe(agent.name)
     });
 
+    test('should be agent status updated', async() => {
+        let agentStatus
+        const agentId = agents[0]._id
+
+        await agentInstanceService.updateAgentStatus(agentId,false)
+        agentStatus = await agentInstanceService.isOnline(agentId)
+        expect(agentStatus).toBe(false)
+        
+        await agentInstanceService.updateAgentStatus(agentId,true)
+        agentStatus = await agentInstanceService.isOnline(agentId)
+        expect(agentStatus).toBe(true)
+    })
+
     test('Get agents by id', async() => {
+        await agentInstanceService.create(agents[0])
         const _id = "642ce03160c06a843dfce0f2"
         const agentsAvailable = await agentInstanceService.getAgentById(_id)
-        const agent = agentsAvailable[0]
+        const agent = agentsAvailable
         expect(_id).toBe(agent._id)
     });
 
     test('Fail Get agents by id', async() => {
+        await agentInstanceService.create(agents[0])
         const _id = "642ce03160c06a843dfc"
         await expect(agentInstanceService.getAgentById(_id))
             .rejects
             .toThrow("Agent id didnt find");
     });
 
+    test('Get agents by queueId and operationId', async() => {
+        await agentInstanceService.create(agents[0])
+        const idQueue = agents[0].idQueue[0]
+        const agentsAvailable = await agentInstanceService.getAgentsByOperationAndQueue(idOperation,idQueue,'true')
+        const agent = agentsAvailable[0]
+        expect(agents[0]._id).toBe(agent._id)
+    });
+
     test('Get agents by email', async() => {
+        await agentInstanceService.create(agents[0])
         const email = "r@correo.com"
         const agentsAvailable = await agentInstanceService.getAgentByEmail(email)
         const agent = agentsAvailable
@@ -77,6 +101,7 @@ describe('Agent services tests',()=>{
     });
 
     test('Fail Get agents by email', async() => {
+        await agentInstanceService.create(agents[0])
         const email = "any@correo.com"
         await expect(agentInstanceService.getAgentByEmail(email))
             .rejects

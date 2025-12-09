@@ -1,4 +1,4 @@
-const { randomTimeStampDate, isValidTimestamp } = require("../../../../src/Shared/Utils/date")
+const { randomTimeStampDate, isValidTimestamp, getCurrentTimestamp } = require("../../../../src/Shared/Utils/date")
 
 describe('Date utils file',()=>{
 
@@ -29,6 +29,12 @@ describe('Date utils file',()=>{
 
     test('random date',()=>{
         const timestamp = randomTimeStampDate()
+        result = isValidTimestamp(timestamp)
+        expect(result).toBe(true)
+    })
+
+    test('current date',()=>{
+        const timestamp = getCurrentTimestamp()
         result = isValidTimestamp(timestamp)
         expect(result).toBe(true)
     })

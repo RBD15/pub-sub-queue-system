@@ -7,5 +7,6 @@ const EnqueueListener = require("./src/Shared/Listener/EnqueueListener");
 const AgentUpdateStatusListener = require("./src/Shared/Listener/AgentUpdateStatusListener");
 const EnqueueInteraction = require("./src/Queue/Domain/EnqueueInteraction");
 const QueueInterface = require("./src/Queue/Domain/QueueInterface");
+const { getCurrentTimestamp } = require("./src/Shared/Utils/date");
 
-module.exports = {QueueManager, pendingInteractionJob, AgentUpdateStatusEvent, AgentUpdateStatusListener, EnqueueEvent, EnqueueListener, EnqueueInteraction, AgentStatus, QueueInterface}
+module.exports = {QueueManager, pendingInteractionJob, AgentUpdateStatusEvent, AgentUpdateStatusListener, EnqueueEvent, EnqueueListener, EnqueueInteraction, AgentStatus, getCurrentTimestamp, QueueInterface}

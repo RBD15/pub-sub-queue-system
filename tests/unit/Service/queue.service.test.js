@@ -1,19 +1,21 @@
+const Queue = require("../../../src/Queue/application/Queue");
 const queueService = require("../../../src/Service/queue.service");
 
 describe('Queue Service Test',()=>{
     
-    let queueInstanceService,queues
+    let queueInstanceService,queues,idOperation
     beforeAll(()=>{
         queueInstanceService = queueService
+        idOperation = '1234'
     })
 
     test('should add new queue', async() => {
         let queuesAvailable
-        queuesAvailable = await queueInstanceService.getAllByOperation('1234')
+        queuesAvailable = await queueInstanceService.getAllQueuesByOperation(idOperation)
             
         expect(queuesAvailable.length).toBe(0)
-        const queue = {
-            idOperation: '1234',
+        const queueJson = {
+            idOperation: idOperation,
             id:'1000',
             name:'SAC',
             agents: [
@@ -22,8 +24,8 @@ describe('Queue Service Test',()=>{
                     "name": "Rober",
                     "email": "r@correo.com",
                     "idQueue": [
-                        {"_id": "68960b4f74b0b2262e7bdd52"},
-                        {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                        {"_id": "1000"},
+                        {"_id": "2000"}
                     ],
                     "idOperation": "1234",
                     "online": true
@@ -33,30 +35,31 @@ describe('Queue Service Test',()=>{
                     "name": "Prueba",
                     "email": "test@correo.com",
                     "idQueue": [
-                        {"_id": "68960b4f74b0b2262e7bdd52"},
-                        {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                        {"_id": "1000"},
                     ],
                     "idOperation": "1234",
                     "online": false
                 }
             ]
         }
-        queueInstanceService.create(queue)  
-        queuesAvailable = await queueInstanceService.getAllByOperation('1234')
+        const queue = new Queue(queueJson.id,queueJson.id,queueJson.idOperation)
+        queue.setAgentsJson(queueJson.agents)
+        await queueService.create(queue)
 
+        queuesAvailable = await queueInstanceService.getAllQueuesByOperation(idOperation)
         expect(queuesAvailable.length).toBe(1)
     });
 
     test('should queue return agents', async() => {
         let queuesAvailable
-        queuesAvailable = await queueInstanceService.getQueuesWithAgents('1234')
+        queuesAvailable = await queueInstanceService.getQueuesWithAgents(idOperation)
         expect(queuesAvailable.length).toBe(1)
         expect(queuesAvailable[0].agents.length).toBe(2)
     });
 
     test('should queue return only online agents', async() => {
         const queueId = '1000'
-        queueAvailableAgents = await queueInstanceService.getQueueWithAvailableAgents('1234',queueId)
+        queueAvailableAgents = await queueInstanceService.getQueueWithAvailableAgents(idOperation,queueId)
         expect(queueAvailableAgents.length).toBe(1)
         expect(queueAvailableAgents[0].name).toBe("Rober")
     });
@@ -64,10 +67,10 @@ describe('Queue Service Test',()=>{
     test('should queue founded by id', async() => {
         const queueId = '1000'
         queueFounded = await queueInstanceService.getQueueById(queueId)
-        expect(queueFounded.length).toBe(1)
+        expect(queueFounded.id).toBe(queueId)
     });
 
-    test('should queue was founded by id', async() => {
+    test('should queue wasnt founded by id', async() => {
         const queueId = '1001'
         queueFounded =   await expect(queueInstanceService.getQueueById(queueId))
         .rejects

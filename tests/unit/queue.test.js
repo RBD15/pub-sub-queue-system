@@ -1,116 +1,139 @@
 const Queue = require("../../src/Queue/application/Queue");
+const QueueImplementation = require("../../src/Queue/application/QueueImplementation");
+const agentService = require("../../src/Service/agent.service");
+const queueService = require("../../src/Service/queue.service");
 
 describe('Queue Class Tests',()=>{
 
-    let queue,id,name,agent
+    let queueImplementation,id,name,agent,idOperation,queueId
+
     beforeAll(()=>{
         id = '1000'
         name= 'SAC'
+        idOperation = '1234'
+        queueId = '1000'
         agent = {
             "_id": "642ce03160c06a843dfce0f2",
             "name": "Test",
             "email": "r@correo.com",
             "idQueue": [
-                {"_id": "68960b4f74b0b2262e7bdd52"},
-                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                {"_id": "1000"}
             ],
             "idOperation": "1234",
             "online": true
         }
     })
 
-    test('should create instance', () => {
-        queue = new Queue(id,name)
-        expect(queue).toBeInstanceOf(Queue)
+    test('should create instance', async () => {
+        queueImplementation = new QueueImplementation(id,name,idOperation)
+        expect(queueImplementation).toBeInstanceOf(QueueImplementation)
     });
 
-    test('should empty agents', () => {
-        const isAgents = queue.isEmpty()
-        expect(isAgents).toBe(false)
+    test('should empty agents', async () => {
+        queueImplementation = new QueueImplementation(id,name,idOperation)
+        await queueImplementation.clean()
+
+        const isAgents = await queueImplementation.isQueueEmpty(idOperation,queueId)
+        expect(isAgents).toBe(true)
     });
 
-    test('should be agents', () => {
-        queue.setAgent(agent)
-        const agents = queue.getAgents()
+    test('should be agents', async () => {
+        queueImplementation = new QueueImplementation(id,name,idOperation)
+        await queueImplementation.clean()
+
+        const queue = new Queue(queueId,queueId,idOperation)
+        await queueService.create(queue)
+        await agentService.create(agent)
+
+        await queueImplementation.setAgent(agent)
+        const agents = await queueImplementation.getAgents(idOperation,queueId)
         expect(agents.length).toBe(1)
         expect(agents[0].name).toBe('Test')
         expect(agents[0].interactions).toBe(0)
     });
 
-    test('should assign agent and increase interaction', () => {
+    test('should assign agent and increase interaction', async() => {
+        queueImplementation = new QueueImplementation(id,name,idOperation)
+        await queueImplementation.clean()
+
+        const queue = new Queue(queueId,queueId,idOperation)
+        await queueService.create(queue)
+
         const newAgent = {
             "_id": "600ce03161c06a843dfce0f2",
             "name": "Prueba",
             "email": "test@correo.com",
             "idQueue": [
-                {"_id": "68960b4f74b0b2262e7bdd52"},
-                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                {"_id": "1000"}
             ],
             "idOperation": "1234",
-            "online": false
+            "online": true
         }
-        queue.setAgent(newAgent)
-        const agentAssigned = queue.assignAgent()
-        expect(agentAssigned.name).toBe(agent.name)
+        await agentService.create(newAgent)
+        await queueImplementation.setAgent(newAgent)
+
+        const agentAssigned = await queueImplementation.assignAgent(idOperation,queueId)
+        expect(agentAssigned.name).toBe(newAgent.name)
         expect(agentAssigned.interactions).toBe(1)      
     });
 
-    test('should agent interactions be zero', () => {
-        const agentAssigned = queue.assignAgent()
-        expect(agentAssigned.name).toBe(agent.name)
-        expect(agentAssigned.interactions).toBe(2)  
-        queue.cleanAgentInteractions(agentAssigned._id) 
-        const agents = queue.getAgents()
-        expect(agents[0].interactions).toBe(0)        
-    });
+    test('should clean agent interactions be zero', async () => {
+        queueImplementation = new QueueImplementation(id,name,idOperation)
+        await queueImplementation.clean()
+        const queue = new Queue(queueId,queueId,idOperation)
+        await queueService.create(queue)
 
-    test('should remove all agents', () => {
-
-        queue = new Queue(id,name)
-        queue.setAgent(agent)
-        let agents = queue.getAgents()
-        expect(agents.length).toBe(1)
-        expect(agents[0].name).toBe('Test')
-        expect(agents[0].interactions).toBe(0)
-
-        queue.removeAgents()
-        agents = queue.getAgents()
-        expect(agents.length).toBe(0)     
-    });
-
-    test('should clean agents interactions', () => {
-        
-        const queue = new Queue('2000','2000')
-        const first = {
-            "_id": "600ce03161c06a843dfce111",
-            "name": "First",
+        const newAgent = {
+            "_id": "600ce03161c06a843dfce0f2",
+            "name": "Prueba",
             "email": "test@correo.com",
             "idQueue": [
-                {"_id": "68960b4f74b0b2262e7bdd52"},
-                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                {"_id": "1000"}
             ],
             "idOperation": "1234",
             "online": true
         }
+        await agentService.create(newAgent)
+        await queueImplementation.setAgent(newAgent)
 
-        const second = {
-            "_id": "600ce03161c06a843dfce222",
-            "name": "Second",
-            "email": "t@correo.com",
+        const agentAssigned = await queueImplementation.assignAgent(idOperation,queueId)
+        expect(agentAssigned.name).toBe(newAgent.name)
+        expect(agentAssigned.interactions).toBe(1)
+
+        await queueImplementation.cleanAgentInteractions(agentAssigned._id) 
+        const agents = await queueImplementation.getAgents(idOperation,queueId)
+        expect(agents[0].interactions).toBe(0)
+    });
+
+    test('should remove all agents', async () => {
+        queueImplementation = new QueueImplementation(id,name,idOperation)
+        await queueImplementation.clean()
+
+        const queue = new Queue(queueId,queueId,idOperation)
+        await queueService.create(queue)
+
+        const newAgent = {
+            "_id": "600ce03161c06a843dfce0f2",
+            "name": "Prueba",
+            "email": "test@correo.com",
             "idQueue": [
-                {"_id": "68960b4f74b0b2262e7bdd52"},
-                {"_id": "689ca3b7da3b9bfe5aa782f9"}
+                {"_id": "1000"}
             ],
             "idOperation": "1234",
             "online": true
         }
 
-        queue.setAgent(first)
-        queue.setAgent(second)
+        await agentService.create(newAgent)
+        await queueImplementation.setAgent(newAgent)
 
-        const agentAssigned = queue.assignAgent()
-        expect(agentAssigned.name).toBe(first.name)
-        expect(agentAssigned.interactions).toBe(1)      
+        let agents = await queueImplementation.getAgents(idOperation,queueId)
+        expect(agents.length).toBe(1)
+        expect(agents[0].name).toBe('Prueba')
+        expect(agents[0].interactions).toBe(0)
+
+        await queueImplementation.removeAgents()
+        agents = await queueImplementation.getAgents(idOperation,queueId)
+        expect(agents.length).toBe(0)     
     });
 
 })
